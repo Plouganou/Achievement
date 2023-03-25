@@ -1,0 +1,73 @@
+import UIKit
+import AVFoundation
+
+class GoalViewController: UIViewController {
+
+    @IBOutlet weak var goalTitleTextField: UITextField!
+    @IBOutlet weak var stepsTableView: UITableView!
+    
+    var goals: [Goal] = []
+    var selectedGoal: Goal?
+    let notificationSound = URL(fileURLWithPath: Bundle.main.path(forResource: "success", ofType: "mp3")!)
+    var audioPlayer = AVAudioPlayer()
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        // Set up the audio player
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: notificationSound)
+            audioPlayer.prepareToPlay()
+        } catch {
+            print("Error loading sound file: \(error.localizedDescription)")
+        }
+    }
+    
+    @IBAction func addGoalButtonPressed(_ sender: Any) {
+        let newGoal = Goal(title: goalTitleTextField.text ?? "")
+        goals.append(newGoal)
+        goalTitleTextField.text = ""
+        stepsTableView.reloadData()
+    }
+    
+    @IBAction func completeStepButtonPressed(_ sender: UIButton) {
+        guard let cell = sender.superview?.superview as? StepTableViewCell else {
+            return
+        }
+        guard let indexPath = stepsTableView.indexPath(for: cell) else {
+            return
+        }
+        let selectedStep = goals[indexPath.section].steps[indexPath.row]
+        selectedStep.isComplete = true
+        stepsTableView.reloadRows(at: [indexPath], with: .automatic)
+        if goals[indexPath.section].isGoalComplete() {
+            // Play sound and animation
+            audioPlayer.play()
+            // Add code to show animation
+        }
+    }
+    
+}
+
+extension GoalViewController: UITableViewDataSource, UITableViewDelegate {
+    
+    func numberOfSections(in tableView: UITableView) -> Int {
+        return goals.count
+    }
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return goals[section].steps.count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "StepTableViewCell", for: indexPath) as! StepTableViewCell
+        let step = goals[indexPath.section].steps[indexPath.row]
+        cell.stepLabel.text = step.title
+        cell.completeButton.isHidden = step.isComplete
+        return cell
+    }
+    
+    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        return goals[section].title
+    }
+    
+}
